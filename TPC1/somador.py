@@ -10,21 +10,24 @@ def somador(texto):
             i = i + 1
         elif (texto[i].lower() == 'o'):
             i = i + 1
-            if (texto[i].lower() == 'n'):
-                somar = True
-                i = i + 1
-            elif (texto[i].lower() == 'f'):
-                i = i + 1
-                if (texto[i].lower() =='f'):
-                    somar = False
+            if (i < len(texto)):
+                if (texto[i].lower() == 'n'):
+                    somar = True
                     i = i + 1
-            else:
-                i = i + 1
+                elif (texto[i].lower() == 'f'):
+                    i = i + 1
+                    if (i < len(texto)):
+                        if (texto[i].lower() =='f'):
+                            somar = False
+                            i = i + 1
         elif (texto[i] in "0123456789" and somar == True):
             valor = 0
-            while (texto[i] in "0123456789"):
-                valor = valor * 10 + int(texto[i])
-                i = i + 1
+            while (i < len(texto)):
+                if (texto[i] in "0123456789"):
+                    valor = valor * 10 + int(texto[i])
+                    i = i + 1
+                else:
+                    break
             soma += valor
         else:
             i = i + 1
