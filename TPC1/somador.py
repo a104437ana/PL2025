@@ -31,9 +31,6 @@ def somador(texto):
             soma += valor
         else:
             i = i + 1
+    print(soma)
             
-if sys.stdin.isatty():
-    for linha in sys.stdin:
-        somador(linha)
-else:
-    somador(sys.stdin.read())
+somador(sys.stdin.read())
