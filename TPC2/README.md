@@ -31,7 +31,7 @@ Em segundo lugar, abri o CSV e percebi que cada obra musical irá ter os seguint
   
 e todos eles separados por ponto e vírgula (**;**).
 
-Em terceiro lugar, percebi que as obras musicais não estão uma em cada linha, como devia ser. Neste dataset, o que separa uma obra musical de outra é o new line, nova linha (**\n**) quando (**?=**) é seguido imediatamente de um caracter não branco (**/S**), ou seja, um caracter que não seja o espaço, nova linha ou tabulação. Podemos observar que quando se muda de linha e depois temos tabulação é porque continuamos na mesma obra musical. Se mudarmos de linha e imediatamente tivermos um caracter não branco, então ai é porque já mudamos de obra musical. Assim, queremos dividir o texto (**split**) com o delimitador de nova linha (**\n**) quando (**?=**) este está antes de um caracter não branco (**/S**), para assim obtermos a lista das obras musicais. Expressão regular para isto:
+Em terceiro lugar, percebi que as obras musicais não estão uma em cada linha, como devia ser. Neste dataset, o que separa uma obra musical de outra é o new line, nova linha (**\n**) quando (**?=**) é seguido imediatamente de um caracter não branco (**\S**), ou seja, um caracter que não seja o espaço, nova linha ou tabulação. Podemos observar que quando se muda de linha e depois temos tabulação é porque continuamos na mesma obra musical. Se mudarmos de linha e imediatamente tivermos um caracter não branco, então ai é porque já mudamos de obra musical. Assim, queremos dividir o texto (**split**) com o delimitador de nova linha (**\n**) quando (**?=**) este está antes de um caracter não branco (**\S**), para assim obtermos a lista das obras musicais. Expressão regular para isto:
 ```
 \n(?=\S)
 ```
