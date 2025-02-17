@@ -1,4 +1,4 @@
-# TPC1 : Análise de um dataset de obras musicais
+# TPC2 : Análise de um dataset de obras musicais
 ## Data
 - 16/02/2025
 ## Autor
