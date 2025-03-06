@@ -37,17 +37,19 @@ Nesta linguagem temos:
     1. Select (SEL): `"select"`;
     2. Where (WHE): `"where"`;
     3. Limit (LIM): `"limit"`;
-3. Pontuação (PON) que inclui o ponto (`.`) e as chavetas (`{`,`}`): `"[{\\.}]"`;
-4. Variáveis (VAR): `"\\?\\w+"`;
-5. Strings (STR): `"\".*\"`;
-6. Linguagem dessa string (LAN): `"@\\w+"`;
-7. Números (NUM): `"\\d+"`;
-8. Predicados (PRE): `"a|\\w+:\\w+"`;
+3. Pontos (PON): `"\\."`;
+4. Chavetas abertas (CA): `"{"`;
+5. Chavetas fechadas (CF): `"}"`;
+6. Variáveis (VAR): `"\\?\\w+"`;
+7. Strings (STR): `"\".*\"`;
+8. Linguagem dessa string (LAN): `"@\\w+"`;
+9. Números (NUM): `"\\d+"`;
+10. Predicados (PRE): `"a|\\w+:\\w+"`;
 
 Nesta linguagem também temos caracteres que devem ser ignorados (SKIP) `"[ \\t]"` (espaços e tabs) e nova linha (NEWLINE) `"\\n"`.
 Qualquer coisa diferente disto é erro na linguagem (ERRO) `"."`.
 
-Tendo em conta isto, listei os tokens e as expressões regulares que os descrevem no ficheiro JSON, chamado **tokens_listas.json**.
+Tendo em conta isto, listei os tokens (e outros) e as expressões regulares que os descrevem no ficheiro JSON, chamado **tokens_listas.json**.
 
 Depois, peguei no gerador de analisadores léxicos do professor, **gen_tokenizer.py**, e fiz algumas alterações. Depois executei-o e obtive o analisador léxico, **analex.py**.
 
@@ -68,7 +70,7 @@ python3 analex.py < input.txt > output.txt
 ```
 ## Resultados
 ### Ficheiros resultantes deste trabalho
-- O ficheiro JSON com os tipos de tokens e as expressões regulares que os descrevem: [tokens_listas.json](tokens_listas.json)
+- O ficheiro JSON com os tokens (e outros) e as expressões regulares que os descrevem: [tokens_listas.json](tokens_listas.json)
 - O programa em Python que gera o analisador léxico apartir do JSON: [gen_tokenizer.py](gen_tokenizer.py)
 - O programa em Python que é o analisador léxico: [analex.py](analex.py)
 - O ficheiro de entrada .txt para testar: [input.txt](input.txt)

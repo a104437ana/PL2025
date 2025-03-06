@@ -4,7 +4,7 @@ import re
 def tokenize(input_string):
     reconhecidos = []
     linha = 1
-    mo = re.finditer(r'(?P<COM>#.*)|(?P<SEL>select)|(?P<WHE>where)|(?P<LIM>limit)|(?P<PON>[{\.}])|(?P<VAR>\?\w+)|(?P<STR>".*")|(?P<LAN>@\w+)|(?P<NUM>\d+)|(?P<PRE>a|\w+:\w+)|(?P<SKIP>[ \t])|(?P<NEWLINE>\n)|(?P<ERRO>.)', input_string, re.IGNORECASE)
+    mo = re.finditer(r'(?P<COM>#.*)|(?P<SEL>select)|(?P<WHE>where)|(?P<LIM>limit)|(?P<PON>\.)|(?P<CA>{)|(?P<CF>})|(?P<VAR>\?\w+)|(?P<STR>".*")|(?P<LAN>@\w+)|(?P<NUM>\d+)|(?P<PRE>a|\w+:\w+)|(?P<SKIP>[ \t])|(?P<NEWLINE>\n)|(?P<ERRO>.)', input_string, re.IGNORECASE)
     for m in mo:
         dic = m.groupdict()
         if dic['COM']:
@@ -21,6 +21,12 @@ def tokenize(input_string):
     
         elif dic['PON']:
             t = ("PON", dic['PON'], linha, m.span())
+    
+        elif dic['CA']:
+            t = ("CA", dic['CA'], linha, m.span())
+    
+        elif dic['CF']:
+            t = ("CF", dic['CF'], linha, m.span())
     
         elif dic['VAR']:
             t = ("VAR", dic['VAR'], linha, m.span())
