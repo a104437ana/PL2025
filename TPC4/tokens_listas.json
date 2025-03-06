@@ -1,0 +1,54 @@
+[
+    {
+        "id": "COM",
+        "expreg": "#.*"
+    },
+    {
+        "id": "SEL",
+        "expreg": "select"
+    },
+    {
+        "id": "WHE",
+        "expreg": "where"
+    },
+    {
+        "id": "LIM",
+        "expreg": "limit"
+    },
+    {
+        "id": "PON",
+        "expreg": "[{\\.}]"
+    },
+    {
+        "id": "VAR",
+        "expreg": "\\?\\w+"
+    },
+    {
+        "id": "STR",
+        "expreg": "\".*\""
+    },
+    {
+        "id": "LAN",
+        "expreg": "@\\w+"
+    },
+    {
+        "id": "NUM",
+        "expreg": "\\d+"
+    },
+    {
+        "id": "PRE",
+        "expreg": "a|\\w+:\\w+"
+    },
+    {
+        "id": "SKIP",
+        "expreg": "[ \\t]"
+    },
+    {
+        "id": "NEWLINE",
+        "expreg": "\\n"
+    },
+    {
+        "id": "ERRO",
+        "expreg": "."
+    }
+]
