@@ -1,0 +1,58 @@
+
+PUSHI 0 // variavel numeros
+PUSHI 0 // variavel i
+PUSHI 0 // variavel soma
+
+START
+
+// heap variavel numeros
+PUSHI 5
+ALLOCN
+STOREG 0
+
+PUSHI 0
+STOREG 2
+
+PUSHS "Introduza 5 números inteiros:"
+WRITES
+WRITELN
+
+PUSHI 1
+STOREG 1
+LOOP0:
+PUSHG 1
+PUSHI 5
+INFEQ
+JZ ENDLOOP0
+PUSHG 0
+PUSHG 1
+PUSHI 1
+SUB
+READ
+ATOI
+STOREN
+
+PUSHG 2
+PUSHG 0
+PUSHG 1
+PUSHI 1
+SUB
+LOADN
+ADD
+STOREG 2
+
+PUSHG 1
+PUSHI 1
+ADD
+STOREG 1
+JUMP LOOP0
+ENDLOOP0:
+
+PUSHS "A soma dos números é: "
+WRITES
+PUSHG 2
+WRITEI
+WRITELN
+
+STOP
+

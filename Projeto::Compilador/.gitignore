@@ -1,0 +1,5 @@
+report/build
+__pycache__/
+parser.out
+parsetab.py
+src/exemplo.txt

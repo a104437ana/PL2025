@@ -1,0 +1,522 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[portuguese]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{float} 
+\usepackage[pdftex]{hyperref}
+\usepackage{titling}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\setlength{\parindent}{0pt}
+
+\setlength{\droptitle}{-2cm}
+
+\title{Projeto de Processamento de Linguagens 2025\\[1em]
+            \textbf{Construção de um Compilador para Pascal Standard}
+            \\[1em]Relatório Técnico
+        }
+\author{
+    Grupo 12 - Equipa Bugbusters \raisebox{-0.5ex}{\includegraphics[width=1em]{cover/Beetle_Emoji.png}\includegraphics[width=1em]{cover/Prohibited_Emoji.png}}\\\\
+    \begin{tabular}{ccc}
+    \includegraphics[width=3.5cm, height=3.5cm]{cover/A104437.png} & \includegraphics[width=3.5cm, height=3.5cm]{cover/A104263.png} & \includegraphics[width=3.5cm, height=3.5cm]{cover/A76350.jpg} \\
+    Ana Sá Oliveira & Inês Silva Marques & José Rafael de \\
+    (a104437) & (a104263) & Oliveira Vilas Boas \\
+    && (a76350) \\
+    \end{tabular}
+    \\
+    \includegraphics[width=4cm, height=4cm]{cover/Bugbusters.png}
+    \\
+}
+\date{\today}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+    Este projeto teve como objetivo o desenvolvimento de um compilador para a linguagem Pascal Standard. O compilador foi construído em várias etapas, começando pela análise léxica, utilizando a biblioteca ply.lex para transformar o código-fonte em uma sequência de tokens. A seguir, foi implementada a análise sintática com ply.yacc, validando a estrutura do programa com base na gramática da linguagem.
+    A partir do código reconhecido, foi construída uma árvore de sintaxe abstrata (AST), que representa de forma estruturada os elementos do programa. Com base nessa AST, foi realizada a análise semântica, incluindo verificação de tipos de dados, declarações de variáveis e coerência do código.
+    Na etapa de geração de código, a AST foi transformada diretamente em código para a máquina virtual do projeto. Para cada etapa, foram realizados testes automáticos com os exemplos de código Pascal fornecidos no enunciado.
+\end{abstract}
+
+\tableofcontents
+%\listoffigures
+%\listoftables
+
+\chapter{Introdução}
+%\section{}
+%\subsection{}
+O objetivo deste projeto foi desenvolver um compilador para a linguagem Pascal standard. Mais concretamente,
+pretendeu-se implementar um compilador capaz de analisar, interpretar e traduzir código Pascal para um formato
+intermediário e deste para código máquina ou diretamente para código máquina, neste caso da VM
+disponibilizada aos alunos. A equipa optou por primeiro passar o código Pascal para um formato intermediário e só depois passar deste para código máquina.
+O compilador deve ser capaz de processar programas Pascal standard, incluindo declaração de variáveis,
+expressões aritméticas e comandos de controle de fluxo (if, while, for), e, opcionalmente, subprogramas
+(procedure e function).
+
+\vspace{1em}
+
+Para construir este compilador, tivemos várias etapas:
+\begin{enumerate}
+    \item Análise léxica;
+    \item Análise sintática;
+    \item Árvore de sintaxe abstrata (AST);
+    \item Análise semântica;
+    \item Geração de código.
+\end{enumerate}
+
+Para além dessas etapas, foi também necessário realizar testes, os quais foram conduzidos de forma contínua ao longo do desenvolvimento.
+
+\chapter{Análise Léxica}
+
+A análise léxica consistiu em implementar um analisador léxico (lexer) para converter código Pascal numa lista de tokens. Para implementar este lexer,
+usamos a ferramenta ply.lex, já conhecida das aulas.
+
+\section{Palavras Reservadas}
+
+O primeiro passo foi identificar as palavras reservadas da linguagem Pascal standart.
+
+\begin{center}
+\begin{tabular}{>{\ttfamily} l >{\ttfamily} l >{\ttfamily} l >{\ttfamily} l}
+\toprule
+and & array & begin & case \\
+const & div & do & downto \\
+else & end & file & for \\
+function & goto & if & in \\
+label & mod & nil & not \\
+of & or & packed & procedure \\
+program & record & repeat & set \\
+then & to & type & until \\
+var & while & with & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Cada palavra reservada resulta num token que definimos.
+
+\vspace{1em}
+
+Por exemplo, o token BEGIN (palavra reservada begin) definimos da seguinte forma:
+
+\begin{verbatim}
+def t_BEGIN(t):
+    r'[bB][eE][gG][iI][nN]\b'
+    return t
+\end{verbatim}
+
+Nesta expressão regular, cada letra aparece entre colchetes com as duas versões maiúscula e minúscula, o que permite que o reconhecimento seja \emph{case insensitive}, aceitando \texttt{begin}, \texttt{Begin}, \texttt{BEGIN}, etc.
+
+Temos ainda uma \emph{word boundary} (limite de palavra), garantindo que o lexer reconheça apenas a palavra completa \texttt{begin} e não uma parte de outra palavra maior, como \texttt{beginning}
+
+\section{Literals}
+
+O segundo passo foi identificar os simbolos únicos, os literals, compostos apenas por um caracter, desta linguagem.
+
+\begin{center}
+\begin{tabular}{>{\ttfamily} l >{\ttfamily} l >{\ttfamily} l >{\ttfamily} l}
+\toprule
++ & - & * & / \\
+= & < & > & [ \\
+] & . & , & : \\
+; & \^{} & ( & ) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Cada um destes simbolos é um token.
+
+\section{Restantes tokens}
+
+O terceiro passo foi identificar os restantes tokens:
+\begin{center}
+\begin{tabular}{>{\ttfamily} l >{\ttfamily} l >{\ttfamily} l >{\ttfamily} l}
+\toprule
+NOT\_EQUAL & LESS\_EQUAL & GREATER\_EQUAL & ASSIGNMENT \\
+RANGE & LPA & ARP & LPP \\
+PRP & BOOL & DATATYPE & ID \\
+INT & REAL & STRING & COMMENT \\
+CHAR \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Os tokens do analisador léxico incluem operadores relacionais como o \texttt{NOT\_EQUAL}, que representa o símbolo de diferente (\texttt{<>}), além do \texttt{LESS\_EQUAL} e \texttt{GREATER\_EQUAL}, correspondentes aos operadores “menor ou igual” (\texttt{<=}) e “maior ou igual” (\texttt{>=}), respectivamente. O token \texttt{ASSIGNMENT} identifica o operador de atribuição usado em Pascal, que é representado por \texttt{:=}. Para representar intervalos, utiliza-se o token \texttt{RANGE}, que corresponde ao símbolo \texttt{..}.
+
+O token \texttt{BOOL} é usado para valores booleanos, como \texttt{true} e \texttt{false}, e o \texttt{DATATYPE} identifica os tipos de dados básicos da linguagem, incluindo \texttt{integer}, \texttt{real}, \texttt{char}, \texttt{boolean} e \texttt{string}. Para nomes de variáveis, funções e procedimentos, o token \texttt{ID} é responsável por reconhecer os identificadores.
+
+Números inteiros e reais são capturados pelos tokens \texttt{INT} e \texttt{REAL}, respectivamente, enquanto cadeias de caracteres delimitadas por aspas são reconhecidas pelo token \texttt{STRING}. Apenas um caracter entre aspas simples será reconhecido pelo token \texttt{CHAR}. Por fim, o token \texttt{COMMENT} é utilizado para identificar os comentários no código, que são ignorados durante a compilação.
+
+Quanto a símbolos delimitadores, temos os tokens \texttt{LPA} e \texttt{ARP}, que correspondem a\texttt{(*} e \texttt{*)}, respectivamente, enquanto \texttt{LPP} e \texttt{PRP} representam \texttt{(.} e \texttt{.)}.
+
+Assim, o analisador léxico, o \texttt{pascal\_analex.py}, transforma o código pascal numa sequência de tokens. Se existir algum caracter ilegal, o lexer irá mostrar onde ocorreu o erro.
+
+\vspace{1em}
+
+Se quisermos testar o lexer com o input do terminal:
+\begin{verbatim}
+python3 pascal_analex.py
+\end{verbatim}
+
+Se quisermos testar o lexer com um ficheiro:
+\begin{verbatim}
+python3 pascal_analex.py < ../examples/exemplo1.pas
+\end{verbatim}
+
+Se quisermos testar com um exemplo concreto do enunciado:
+\begin{verbatim}
+python3 pascal_analex.py 1
+\end{verbatim}
+
+\chapter{Análise Sintática}
+
+A análise sintática consistiu em construir um analisador sintático (parser) para validar a estrutura gramatical do código. Para implementar o parser usamos a ferramenta ply.yacc.
+
+\section{Gramática}
+O primeiro passo consiste em definir uma gramática da linguagem:
+
+\begin{tabbing}
+\hspace{1.3cm}\= \hspace{11cm}\= \kill
+\textbf{p0:}  \> S' \(\to\) program \\
+\textbf{p1:}  \> program \(\to\) PROGRAM ID ; declarations code\_block . \\
+\textbf{p2:}  \> program \(\to\) declarations code\_block . \\
+\textbf{p3:}  \> declarations \(\to\) declarations declaration \\
+\textbf{p4:}  \> declarations \(\to\) \(\epsilon\) \\
+\textbf{p5:}  \> declaration \(\to\) variables\_declaration \\
+\textbf{p6:}  \> declaration \(\to\) function \\
+\textbf{p7:}  \> declaration \(\to\) procedure \\
+\textbf{p8:}  \> variables\_declaration \(\to\) VAR variables\_list \\
+\textbf{p9:}  \> variables\_list \(\to\) variables\_list same\_type\_variables \\
+\textbf{p10:} \> variables\_list \(\to\) same\_type\_variables \\
+\textbf{p11:} \> same\_type\_variables \(\to\) id\_list : DATATYPE ; \\
+\textbf{p12:} \> same\_type\_variables \(\to\) id\_list : ARRAY [ INT RANGE INT ] OF DATATYPE ; \\
+\textbf{p13:} \> id\_list \(\to\) id\_list , ID \\
+\textbf{p14:} \> id\_list \(\to\) ID \\
+\textbf{p15:} \> var\_or\_not \(\to\) variables\_declaration \\
+\textbf{p16:} \> var\_or\_not \(\to\) \(\epsilon\) \\
+\textbf{p17:} \> function \(\to\) FUNCTION ID ( parameters ) : DATATYPE ; var\_or\_not code\_block ; \\
+\textbf{p18:} \> procedure \(\to\) PROCEDURE ID ( parameters ) ; var\_or\_not code\_block ; \\
+\textbf{p19:} \> parameters \(\to\) parameter\_list \\
+\textbf{p20:} \> parameters \(\to\) \(\epsilon\) \\
+\textbf{p21:} \> parameter\_list \(\to\) parameter\_list ; parameter \\
+\textbf{p22:} \> parameter\_list \(\to\) parameter \\
+\textbf{p23:} \> parameter \(\to\) VAR\_opt id\_list : DATATYPE \\
+\textbf{p24:} \> VAR\_opt \(\to\) VAR \\
+\textbf{p25:} \> VAR\_opt \(\to\) \(\epsilon\) \\
+\textbf{p26:} \> code\_block \(\to\) BEGIN algorithm END \\
+\textbf{p27:} \> algorithm \(\to\) algorithm ; statement \\
+\textbf{p28:} \> algorithm \(\to\) statement \\
+\textbf{p29:} \> statement \(\to\) assignment \\
+\textbf{p30:} \> statement \(\to\) func\_call \\
+\textbf{p31:} \> statement \(\to\) loop \\
+\textbf{p32:} \> statement \(\to\) code\_block \\
+\textbf{p33:} \> statement \(\to\) if \\
+\textbf{p34:} \> statement \(\to\) else \\
+\textbf{p35:} \> statement \(\to\) \(\epsilon\) \\
+\textbf{p36:} \> if \(\to\) IF cond THEN statement \\
+\textbf{p37:} \> else \(\to\) IF cond THEN statement ELSE statement \\
+\textbf{p38:} \> assignment \(\to\) ID ASSIGNMENT cond \\
+\textbf{p39:} \> assignment \(\to\) ID [ INT ] ASSIGNMENT cond \\
+\textbf{p40:} \> assignment \(\to\) ID [ ID ] ASSIGNMENT cond \\
+\textbf{p41:} \> loop \(\to\) for \\
+\textbf{p42:} \> loop \(\to\) while \\
+\textbf{p43:} \> for \(\to\) FOR for\_cond DO statement \\
+\textbf{p44:} \> for\_cond \(\to\) assignment TO cond \\
+\textbf{p45:} \> for\_cond \(\to\) assignment DOWNTO cond \\
+\textbf{p46:} \> while \(\to\) WHILE cond DO statement \\
+\textbf{p47:} \> cond \(\to\) expr \\
+\textbf{p48:} \> cond \(\to\) expr op\_rel expr \\
+\textbf{p49:} \> op\_rel \(\to\) = \\
+\textbf{p50:} \> op\_rel \(\to\) NOT\_EQUAL \\
+\textbf{p51:} \> op\_rel \(\to\) < \\
+\textbf{p52:} \> op\_rel \(\to\) LESS\_EQUAL \\
+\textbf{p53:} \> op\_rel \(\to\) > \\
+\textbf{p54:} \> op\_rel \(\to\) GREATER\_EQUAL \\
+\textbf{p55:} \> expr \(\to\) termo \\
+\textbf{p56:} \> expr \(\to\) expr op\_ad termo \\
+\textbf{p57:} \> termo \(\to\) fator \\
+\textbf{p58:} \> termo \(\to\) termo op\_mul fator \\
+\textbf{p59:} \> op\_ad \(\to\) + \\
+\textbf{p60:} \> op\_ad \(\to\) - \\
+\textbf{p61:} \> op\_ad \(\to\) OR \\
+\textbf{p62:} \> op\_mul \(\to\) * \\
+\textbf{p63:} \> op\_mul \(\to\) / \\
+\textbf{p64:} \> op\_mul \(\to\) AND \\
+\textbf{p65:} \> op\_mul \(\to\) MOD \\
+\textbf{p66:} \> op\_mul \(\to\) DIV \\
+\textbf{p67:} \> fator \(\to\) value \\
+\textbf{p68:} \> fator \(\to\) ( cond ) \\
+\textbf{p69:} \> fator \(\to\) NOT fator \\
+\textbf{p70:} \> value \(\to\) ID \\
+\textbf{p71:} \> value \(\to\) INT \\
+\textbf{p72:} \> value \(\to\) REAL \\
+\textbf{p73:} \> value \(\to\) STRING \\
+\textbf{p74:} \> value \(\to\) BOOL \\
+\textbf{p75:} \> value \(\to\) ID [ INT ] \\
+\textbf{p76:} \> value \(\to\) ID [ ID ] \\
+\textbf{p77:} \> value \(\to\) func\_call \\
+\textbf{p78:} \> value \(\to\) CHAR \\
+\textbf{p79:} \> func\_call \(\to\) ID ( args ) \\
+\textbf{p80:} \> args \(\to\) elems \\
+\textbf{p81:} \> args \(\to\) \(\epsilon\) \\
+\textbf{p82:} \> elems \(\to\) elems , cond \\
+\textbf{p83:} \> elems \(\to\) cond \\
+\end{tabbing}
+
+\section{Analisador Sintático}
+Definida a gramática a utilizar, implementamos o programa \texttt{pascal\_anasin.py} que define funções para reconhecer as várias produções da gramática, utilizando o ply.yacc.
+Assim, para cada símbolo não terminal definido, temos um método que define as produções que derivam nesse símbolo e efetua as ações semânticas necessárias.
+Neste caso, como estamos a criar uma AST, a única ação semântica a realizar é ir construíndo a árvore, conforme se reconhecem símbolos essenciais para a gramática concreta que definimos, explicada melhor na secção seguinte.
+Algo a ressaltar, por diferir um pouco do que fizemos nas aulas é a definição de precedências no caso do \texttt{if} e \texttt{else}, para evitar um conflito de shift/reduce.
+
+\vspace{1em}
+
+Se quisermos testar o parser com o input do terminal:
+\begin{verbatim}
+python3 pascal_anasin.py
+\end{verbatim}
+
+Se quisermos testar o parser com um ficheiro:
+\begin{verbatim}
+python3 pascal_anasin.py < ../examples/exemplo1.pas
+\end{verbatim}
+
+Se quisermos testar com um exemplo concreto do enunciado:
+\begin{verbatim}
+python3 pascal_anasin.py 1
+\end{verbatim}
+
+\chapter{Árvore de Sintaxe Abstrata (AST)}
+
+Durante a fase de análise sintática, à medida que regras de produção são reconhecidas, é possível produzir ações semânticas, uma destas ações consiste em criar uma representação intermédia da estrutura de um programa,
+podendo abstrair detalhes desnecessários da sintaxe, ficando apenas com os elementos essenciais à estrutura e semântica do programa, facilitando assim etapas posteriores de análise semântica e geração de código.
+
+Como o analisador sintático é bottom-up do tipo LALR(1), começa o reconhecimento das folhas para a raíz, facilmente podemos criar uma árvore de sintaxe abstrata à medida que é feito o reconhecimento,
+pois em cada função correspondente a uma regra de produção, o reconhecimento dos seus filhos já foi feito.
+
+Para tal, a partir das regras de produção da gramática, foram identificados os símbolos não terminais essenciais para a definição da estrutura hierárquica em árvore e semântica do programa,
+passando a criar uma classe para cada um destes símbolos identificados, que foram os seguintes:
+
+\vspace{5mm}
+
+\texttt{Program}, constituído por:
+\begin{itemize}
+    \item Declarações, classe \texttt{Declaration};
+    \item Código, classe \texttt{CodeBlock}.
+\end{itemize}
+
+\vspace{5mm}
+
+\texttt{Variable}, classe com informação de uma variável.
+
+\vspace{5mm}
+
+\texttt{Declaration}, classe abstrata contendo:
+\begin{itemize}
+    \item \texttt{Variables}, constituída por:
+    \begin{itemize}
+        \item Lista de classes \texttt{Variable}.
+    \end{itemize}
+    \item \texttt{Function}, com informação relevante da função e constituída por:
+    \begin{itemize}
+        \item Variáveis locais, classe \texttt{Variables};
+        \item Variáveis de parâmetros, classe \texttt{Variables};
+        \item Código da função, classe \texttt{CodeBlock}.
+    \end{itemize}
+    \item \texttt{Procedure}, com informação relevante do procedimento e constituída por:
+    \begin{itemize}
+        \item Variáveis locais, classe \texttt{Variables};
+        \item Variáveis de parâmetros, classe \texttt{Variables};
+        \item Código do procedimento, classe \texttt{CodeBlock}.
+    \end{itemize}
+\end{itemize}
+
+\vspace{5mm}
+
+\texttt{Algorithm}, classe constituída por:
+\begin{itemize}
+    \item Lista de classes \texttt{Statement}.
+\end{itemize}
+
+\vspace{5mm}
+
+\texttt{Statement}, classe abstrata contendo:
+\begin{itemize}
+    \item \texttt{Assignment}, com informação relevante de uma atribuição, constituída por:
+    \begin{itemize}
+        \item Expressão, classe \texttt{Expression}.
+    \end{itemize}
+    \item \texttt{Loop}, com informação relevante de cada tipo de ciclo, constituída por:
+    \begin{itemize}
+        \item Condição, classe \texttt{Expression};
+        \item Lista de classe \texttt{Statement};
+        \item Atribuição, no caso de um ciclo \texttt{for}, classe \texttt{Assignment}.
+    \end{itemize}
+    \item \texttt{If}, com informação relevante de cada tipo de condicional, constituída por:
+    \begin{itemize}
+        \item Condição, classe \texttt{Expression};
+        \item Para a condição verdadeira, lista de classes \texttt{Statement};
+        \item Para a condição falsa, no caso de um \texttt{else}, lista de classes \texttt{Statement}.
+    \end{itemize}
+    \item \texttt{CodeBlock}, constituída por:
+    \begin{itemize}
+        \item Algoritmo, classe \texttt{Algorithm}.
+    \end{itemize}
+\end{itemize}
+
+\vspace{5mm}
+
+\texttt{Expression}, classe abstrata contendo:
+\begin{itemize}
+    \item \texttt{BinaryOp}, operações binárias, para além do operador, constituída por:
+    \begin{itemize}
+        \item Lado esquerdo da operação, classe \texttt{Expression};
+        \item Lado direito da operação, classe \texttt{Expression}.
+    \end{itemize}
+    \item \texttt{UnaryOp}, operações unárias, para além do operador, constituída por:
+    \begin{itemize}
+        \item Expressão, classe \texttt{Expression}.
+    \end{itemize}
+    \item \texttt{Value}, com informação relevante de um valor, como um número ou variável.
+    \item \texttt{FunctionCall}, com informação relevante de uma chamada de função, constituída por:
+    \begin{itemize}
+        \item Lista de argumentos, classes \texttt{Value} ou \texttt{FunctionCall}.
+    \end{itemize}
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=14cm]{images/diagrama.jpeg}
+    \caption{Árvore de Sintaxe Abstrata}    
+\end{figure}
+
+\chapter{Análise Semântica}
+
+A análise semântica consistiu em verificar tipos de dados, declaração de variáveis e coerência do código. Para o fazer, percorremos a AST e fomos guardando algumas informações
+e verificando outras.
+
+Em concreto, na análise semântica:
+\begin{enumerate}
+    \item não permitimos que se use variáveis que não tenham sido declaradas antes (dá erro);
+    \item verificamos, quando se atribui uma variável a uma expressão, que ambas teem o mesmo tipo;
+    \item verificamos o tipo dos operadores numa operação e vemos se são os adequados, por exemplo, não é adequado comparar uma string e um integer;
+    \item verificamos se as expressões usadas em comandos de controlo de fluxo \texttt{if} e \texttt{while} são booleanas;
+    \item não permitimos ter procedures \texttt{writeln}, \texttt{write} ou \texttt{readln} no meio de expressões aritméticas ou lógicas, uma vez que estes não retornam valor;
+    \item verificamos se no \texttt{for}, depois do \texttt{TO} ou do \texttt{DOWNTO}, temos um valor do tipo inteiro, ou uma expressão aritmética.
+\end{enumerate}
+
+\vspace{1em}
+
+Se quisermos testar a análise semântica com o input do terminal:
+\begin{verbatim}
+python3 pascal_anasem.py
+\end{verbatim}
+
+Se quisermos testar com um ficheiro:
+\begin{verbatim}
+python3 pascal_anasem.py < ../examples/exemplo1.pas
+\end{verbatim}
+
+Se quisermos testar com um exemplo concreto do enunciado:
+\begin{verbatim}
+python3 pascal_anasem.py 1
+\end{verbatim}
+
+\chapter{Geração de Código}
+
+Após feita a análise semântica do programa, podemos passar à fase final deste pipeline: a geração de código vm a partir da definição estrutural e lógica criada do programa.
+Para tal foi necessário perceber como funciona o ambiente virtual de código máquina, para o qual teríamos de converter a estrutura de representação abstrata criada, ou seja,
+quais as operações suportadas pela vm, como funciona o seu o modelo de memória, de forma a compreender como fazer o acesso e armazenamento de variáveis e também como é feito o mecanismo de controlo
+para que possamos implementar estruturas de controlo como ciclos e condicionais.
+
+Após esta análise foram, progressivamente, implementadas e testadas as conversões de cada classe para a geração de código, de forma a garantir o seu correto funcionamento, começando por classes estruturais
+como os blocos estruturais de um programa, por exemplo as declarações de variáveis, passando assim a poder definir atribuições simples, progressivamente integrando com operações binárias, dando assim possibilidade
+de passar para classes mais complexas com estruturas de controlo condicional, até chegar à conversão de todas as classes estruturais definidas.
+
+\vspace{1em}
+
+Se quisermos testar o compilador com o input do terminal:
+\begin{verbatim}
+python3 pascal_compiler.py
+\end{verbatim}
+
+Se quisermos testar com um ficheiro:
+\begin{verbatim}
+python3 pascal_compiler.py < ../examples/exemplo1.pas
+\end{verbatim}
+
+Se quisermos ter um ficheiro de input com o código Pascal e um ficheiro de output com código da máquina virtual (o ficheiro vai para a pasta out):
+\begin{verbatim}
+python3 pascal_compiler.py ../examples/exemplo1.pas exemplo1.vm
+\end{verbatim}
+
+Se quisermos testar com um exemplo concreto do enunciado:
+\begin{verbatim}
+python3 pascal_compiler.py 1
+\end{verbatim}
+
+Para compilar o código diretamente para a vm, para quem tem Chrome:
+\begin{verbatim}
+python3 pascal_compiler.py ../examples/exemplo1.pas -vm https://ewvm.epl.di.uminho.pt
+\end{verbatim}
+
+Ou então:
+
+\begin{verbatim}
+python3 pascal_compiler.py 1 -vm https://ewvm.epl.di.uminho.pt
+\end{verbatim}
+
+Se tiver a vm localmente, para compilar o código diretamente para a vm (porta 27018), para quem tem Chrome:
+\begin{verbatim}
+python3 pascal_compiler.py ../examples/exemplo1.pas -vm
+\end{verbatim}
+
+Ou então:
+
+\begin{verbatim}
+python3 pascal_compiler.py 1 -vm
+\end{verbatim}
+
+\chapter{Testes}
+
+Ao longo do desenvolvimento do projeto foram realizados vários testes.
+
+Tanto o analisador léxico, como o analisador sintático, o semântico e o compilador teem os seus próprios programas. Assim, podemos testar cada fase individualmente.
+
+Fizemos ainda o \texttt{pascal\_test.py} que faz a analise léxica, sintática, semântica e gera código, isto tudo sobre os programas em Pascal usados como exemplo no
+enunciado do projeto.
+
+Havia 7 programas em Pascal no enunciado. Todos os programas passam os testes de analise léxica, sintática e semântica porque são programas corretos, sem erros léxicos, sintáticos ou semânticos.
+É gerado código máquina  para os 7 exemplos.
+
+Para testar se o código máquina gerado é executável na máquina virtual e dá o resultado correto, temos de testar manualmente.
+
+\vspace{1em}
+Para correr o teste geral com os 7 exemplos do enunciado fazemos:
+\begin{verbatim}
+python3 pascal_test.py
+\end{verbatim}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=8cm]{images/tests.png}
+    \caption{Testes automáticos.}    
+\end{figure}
+
+\chapter{Conclusão}
+
+Concluindo, conseguimos alcançar o objetivo principal deste projeto: construir um compilador para a linguagem Pascal Standard, que transforme código Pascal em código da máquina virtual.
+O nosso compilador é capaz de processar programas Pascal standart com declarações de variáveis, expressões aritméticas, comandos de controle de fluxo (if, while, for) e funções. Para além disto,
+seguimos as etapas do projeto: construímos um analisador léxico, um analisador sintático, fizemos uma árvore de sintaxe abstrata, fizemos um analisador semântico, geramos o código desejado
+e ainda fizemos testes de tudo isto, para garantir a correção de todos estes programas. Também testamos manualmente se os programas corriam como previsto na máquina virtual.
+
+\vspace{1em}
+
+Ficaram por fazer alguns extras como otimizações do código máquina e suporte a procedures (que seria bastante parecido
+com as funções que fizemos).
+Os procedures estão suportados até ao nosso analisador sintático inclusive, mas depois não os implementamos nas fases seguintes.
+
+\vspace{1em}
+
+Assim, concluímos que conseguimos cumprir os principais objetivos do projeto. 
+
+\end{document}
