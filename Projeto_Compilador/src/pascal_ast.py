@@ -297,9 +297,9 @@ class Algorithm:
             errors = statement.anasem()
             if errors:
                 if errors[0] == "procedure":
-                    return ""
+                    errors = ""
                 elif errors in ["integer","real","boolean","string"]:
-                    return ""
+                    errors = ""
                 else:
                     return errors
         return errors
